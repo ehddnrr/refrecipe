@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 냉장고 관리 및 레시피 추천</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --danger: #ff4d4d;
+            --warning: #ff9800;
+            --dark: #333;
+            --light: #f4f4f9;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: var(--light); color: var(--dark); }
+        header { background: var(--primary); color: white; padding: 1rem; text-align: center; font-size: 1.5rem; font-weight: bold; position: relative; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: white; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; border-bottom: 2px solid var(--light); padding-bottom: 0.5rem; font-size: 1.2rem; }
+        
+        /* 폼 스타일 */
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.3rem; font-weight: bold; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 0.5rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .qty-control { display: flex; gap: 0.5rem; align-items: center; }
+        .qty-control input { text-align: center; }
+        
+        /* 버튼 스타일 */
+        button { background: var(--primary); color: white; border: none; padding: 0.6rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { opacity: 0.9; }
+        .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+        .btn-danger { background: var(--danger); }
+        .btn-secondary { background: #666; }
+        
+        /* 인앱 알림 */
+        #notification-zone { display: none; background: #ffe6e6; border-left: 5px solid var(--danger); padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px; color: #b30000; font-weight: bold; }
+        
+        /* 식재료 리스트 */
+        .ing-list { list-style: none; padding: 0; margin: 0; }
+        .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid #eee; }
+        .ing-item.imminent { background-color: #fff0f0; color: var(--danger); font-weight: bold; }
+        .ing-meta { font-size: 0.85rem; color: #666; }
+        .ing-item.imminent .ing-meta { color: var(--danger); }
+        .actions { display: flex; gap: 0.3rem; }
+
+        /* 레시피 필터 및 결과 */
+        .filter-group { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .recipe-detail { display: none; background: #fff; border: 1px solid #ddd; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; }
+        .recipe-steps { margin-top: 1rem; padding-left: 1.2rem; }
+        .recipe-steps li { margin-bottom: 0.5rem; }
+        
+        /* 회원가입 모달 모방 */
+        #login-view { text-align: center; padding: 3rem 1rem; }
+        #app-view { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 회원 관리 및 로그인 -->
+    <div id="login-view" class="container">
+        <div class="card" style="max-width: 400px; margin: 0 auto;">
+            <h2>식재료 관리 로그인</h2>
+            <div class="form-group">
+                <input type="text" id="login-id" placeholder="아이디 입력" value="demo_user">
+            </div>
+            <div class="form-group">
+                <input type="password" id="login-pw" placeholder="비밀번호 입력" value="1234">
+            </div>
+            <button onclick="handleLogin()" style="width: 100%;">로그인</button>
+        </div>
+    </div>
+
+    <!-- 메인 앱 화면 -->
+    <div id="app-view">
+        <header>
+            스마트 AI 냉장고 관리
+            <button onclick="handleLogout()" class="btn-sm btn-secondary" style="position: absolute; right: 1rem; top: 1rem;">로그아웃</button>
+        </header>
+
+        <div class="container">
+            <!-- 4. 인앱 알림 팝업 -->
+            <div id="notification-zone">
+                ⚠️ 유통기한이 3일 이하로 남은 식재료가 있습니다! 아래 목록을 확인하세요.
+            </div>
+
+            <!-- 5. 메시지 알림 시뮬레이터 -->
+            <div class="card" style="background: #eef9ff; border-left: 5px solid #2196F3;">
+                <h2>🔔 시스템 알림 시뮬레이터 (매일 아침 9시 작동 기능)</h2>
+                <p style="font-size:0.9rem; margin-bottom:0.5rem;">서버 크론탭(Cron)이나 타이머를 통해 아침 9시에 카카오톡/문자가 발송되는 로직을 시뮬레이션합니다.</p>
+                <button onclick="simulatePushNotification()" class="btn-sm" style="background:#2196F3;">아침 9시 알림 즉시 발송 테스트</button>
+            </div>
+
+            <!-- 2. 식재료 수동 등록 -->
+            <div class="card">
+                <h2>📦 식재료 등록</h2>
+                <form id="ing-form" onsubmit="saveIngredient(event)">
+                    <input type="hidden" id="edit-idx">
+                    <div class="form-group">
+                        <label>재료 이름</label>
+                        <input type="text" id="ing-name" required placeholder="예: 양파, 삼겹살">
+                    </div>
+                    <div class="form-group">
+                        <label>카테고리</label>
+                        <select id="ing-category">
+                            <option value="채소">채소</option>
+                            <option value="육류">육류</option>
+                            <option value="해산물">해산물</option>
+                            <option value="유제품">유제품</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>수량</label>
+                        <div class="qty-control">
+                            <button type="button" onclick="changeQty(-1)">-</button>
+                            <input type="number" id="ing-qty" value="1" min="1" style="width: 60px;">
+                            <button type="button" onclick="changeQty(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>구매일</label>
+                        <input type="date" id="ing-buy-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>유통기한</label>
+                        <input type="date" id="ing-exp-date" required>
+                    </div>
+                    <button type="submit" id="submit-btn">등록 완료</button>
+                    <button type="button" id="cancel-btn" class="btn-secondary" onclick="resetForm()" style="display:none;">취소</button>
+                </form>
+            </div>
+
+            <!-- 3. 식재료 수정 및 소진 리스트 -->
+            <div class="card">
+                <h2>🍎 내 냉장고 속 식재료 리스트</h2>
+                <ul id="ingredient-list" class="ing-list"></ul>
+            </div>
+
+            <!-- 6. 맞춤 레시피 검색 및 추천 -->
+            <div class="card">
+                <h2>🤖 AI 맞춤 레시피 추천</h2>
+                <div class="filter-group">
+                    <div>
+                        <label>조리 시간</label>
+                        <select id="recipe-time">
+                            <option value="10분">10분</option>
+                            <option value="20분">20분</option>
+                            <option value="30분">30분</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>난이도</label>
+                        <select id="recipe-level">
+                            <option value="하">하</option>
+                            <option value="중">중</option>
+                            <option value="상">상</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="generateAIRequest()" style="width: 100%; background: #9c27b0;">냉장고 기반 AI 레시피 요청하기</button>
+
+                <!-- AI 프롬프트 생성 시각화 내역 (PRD 검증용) -->
+                <div id="prompt-debug" style="margin-top:1rem; font-size:0.8rem; background:#eee; padding:0.5rem; display:none; border-radius:4px; white-space: pre-wrap;"></div>
+
+                <!-- 7. 레시피 상세 화면 보기 -->
+                <div id="recipe-result-view" class="recipe-detail">
+                    <h3 id="r-title" style="margin-top:0; color:#9c27b0;"></h3>
+                    <div style="background:#ddd; width:100%; height:150px; display:flex; align-items:center; justify-content:center; border-radius:4px; margin-bottom:1rem; font-weight:bold; color:#666;" id="r-img">
+                        🍳 완성 이미지 공간
+                    </div>
+                    <p><strong>⏱️ 조리 시간:</strong> <span id="r-time"></span> | <strong>🔥 칼로리:</strong> <span id="r-cal"></span></p>
+                    <p><strong>🛒 재료 구성:</strong> <span id="r-ingredients"></span></p>
+                    <h4>👨‍🍳 조리 순서</h4>
+                    <ol id="r-steps" class="recipe-steps"></ol>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 초기 데이터 세팅
+        let ingredients = JSON.parse(localStorage.getItem('ingredients')) || [
+            { name: '양파', category: '채소', qty: 3, buyDate: '2026-06-15', expDate: '2026-06-23' },
+            { name: '삼겹살', category: '육류', qty: 1, buyDate: '2026-06-18', expDate: '2026-06-20' }
+        ];
+
+        // 페이지 로드 시 오늘 날짜 기본 지정
+        document.getElementById('ing-buy-date').value = new Date().toISOString().substring(0, 10);
+        document.getElementById('ing-exp-date').value = new Date().toISOString().substring(0, 10);
+
+        // 1. 회원 관리 및 로그인 시스템
+        function handleLogin() {
+            const id = document.getElementById('login-id').value;
+            const hw = document.getElementById('login-pw').value;
+            if(id && hw) {
+                document.getElementById('login-view').style.display = 'none';
+                document.getElementById('app-view').style.display = 'block';
+                renderIngredients();
+            }
+        }
+        function handleLogout() {
+            document.getElementById('login-view').style.display = 'block';
