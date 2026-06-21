@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 냉장고 관리</title>
+<title>AI 냉장고 + 레시피 추천</title>
 
 <style>
 body{
+    margin:0;
+    font-family:sans-serif;
     background:#0f111a;
     color:white;
-    font-family:sans-serif;
     max-width:900px;
     margin:auto;
     padding:20px;
@@ -25,12 +26,11 @@ body{
 input,select{
     width:100%;
     padding:10px;
-    margin-top:5px;
-    margin-bottom:15px;
+    margin:5px 0 15px 0;
     background:#1f2335;
     color:white;
     border:1px solid #333;
-    box-sizing:border-box;
+    border-radius:6px;
 }
 
 button{
@@ -38,8 +38,8 @@ button{
     color:white;
     border:none;
     padding:10px 15px;
-    cursor:pointer;
     border-radius:6px;
+    cursor:pointer;
     margin-right:5px;
 }
 
@@ -47,279 +47,201 @@ button:hover{
     background:#4f46e5;
 }
 
-.delete-btn{
+.delete{
     background:#ef4444;
 }
 
-.delete-btn:hover{
-    background:#dc2626;
-}
-
-#app{
-    display:none;
-}
+#app{display:none;}
 
 li{
-    margin-bottom:10px;
+    list-style:none;
     padding:10px;
+    margin-bottom:10px;
     background:#1f2335;
     border-radius:6px;
-    list-style:none;
 }
-
-.warning{
-    color:#f87171;
-    font-weight:bold;
-}
-
+.warn{color:#f87171;font-weight:bold;}
 pre{
-    white-space:pre-wrap;
     background:#1f2335;
     padding:15px;
     border-radius:8px;
+    white-space:pre-wrap;
 }
 </style>
 </head>
 
 <body>
 
-<div id="loginBox" class="card">
-    <h2>식재료 관리 로그인</h2>
-
-    <input id="id" type="text" value="demo_user">
-
-    <input id="pw" type="password" value="1234">
-
-    <button onclick="login()">로그인</button>
+<div id="login" class="card">
+<h2>로그인</h2>
+<input id="id" value="demo_user">
+<input id="pw" type="password" value="1234">
+<button onclick="login()">로그인</button>
 </div>
 
 <div id="app">
 
-    <div class="card">
-        <h2>냉장고 관리</h2>
+<div class="card">
+<h2>냉장고 등록</h2>
 
-        <input id="name" placeholder="재료명">
+<input id="name" placeholder="재료명">
 
-        <select id="category">
-            <option>채소</option>
-            <option>육류</option>
-            <option>해산물</option>
-            <option>유제품</option>
-            <option>기타</option>
-        </select>
+<select id="cat">
+<option>채소</option>
+<option>육류</option>
+<option>해산물</option>
+<option>유제품</option>
+<option>기타</option>
+</select>
 
-        <input id="qty" type="number" value="1" min="1">
+<input id="qty" type="number" value="1">
 
-        <label>유통기한</label>
-        <input id="expire" type="date">
+<label>유통기한</label>
+<input id="exp" type="date">
 
-        <button onclick="addIngredient()">등록</button>
-        <button onclick="logout()">로그아웃</button>
-    </div>
+<button onclick="add()">등록</button>
+<button onclick="logout()">로그아웃</button>
+</div>
 
-    <div class="card">
-        <h2>유통기한 알림</h2>
-        <div id="notification"></div>
-    </div>
+<div class="card">
+<h2>식재료 리스트</h2>
+<ul id="list"></ul>
+</div>
 
-    <div class="card">
-        <h2>식재료 목록</h2>
-        <ul id="list"></ul>
-    </div>
+<div class="card">
+<h2>유통기한 알림</h2>
+<div id="alert"></div>
+</div>
 
-    <div class="card">
-        <h2>AI 레시피 프롬프트 생성</h2>
+<div class="card">
+<h2>AI 레시피 생성</h2>
 
-        <button onclick="generatePrompt()">
-            냉장고 기반 레시피 요청
-        </button>
+<button onclick="recipe()">
+레시피 추천 받기
+</button>
 
-        <pre id="promptResult"></pre>
-    </div>
+<pre id="result"></pre>
+</div>
 
 </div>
 
-<script>
+<script type="module">
 
-let ingredients =
-JSON.parse(localStorage.getItem("ingredients")) || [];
+import { GoogleGenerativeAI }
+from "https://esm.run/@google/generative-ai";
 
-function login(){
+const API_KEY = "여기에_GEMINI_API_KEY";
 
-    const id=document.getElementById("id").value;
-    const pw=document.getElementById("pw").value;
+let data =
+JSON.parse(localStorage.getItem("fridge")) || [];
 
-    if(id==="demo_user" && pw==="1234"){
+window.login=function(){
 
-        document.getElementById("loginBox").style.display="none";
-        document.getElementById("app").style.display="block";
+const id=document.getElementById("id").value;
+const pw=document.getElementById("pw").value;
 
-        render();
-
-    }else{
-
-        alert("아이디 또는 비밀번호가 틀렸습니다.");
-
-    }
+if(id==="demo_user" && pw==="1234"){
+document.getElementById("login").style.display="none";
+document.getElementById("app").style.display="block";
+render();
+}else{
+alert("로그인 실패");
 }
-
-function logout(){
-
-    document.getElementById("app").style.display="none";
-    document.getElementById("loginBox").style.display="block";
 
 }
 
-function saveData(){
+window.logout=function(){
+location.reload();
+}
 
-    localStorage.setItem(
-        "ingredients",
-        JSON.stringify(ingredients)
-    );
+window.add=function(){
+
+const item={
+name:document.getElementById("name").value,
+cat:document.getElementById("cat").value,
+qty:document.getElementById("qty").value,
+exp:document.getElementById("exp").value
+};
+
+if(!item.name||!item.exp){
+alert("입력값 확인");
+return;
+}
+
+data.push(item);
+localStorage.setItem("fridge",JSON.stringify(data));
+render();
 
 }
 
-function addIngredient(){
-
-    const name=document.getElementById("name").value;
-    const category=document.getElementById("category").value;
-    const qty=document.getElementById("qty").value;
-    const expire=document.getElementById("expire").value;
-
-    if(!name){
-
-        alert("재료명을 입력하세요.");
-        return;
-
-    }
-
-    if(!expire){
-
-        alert("유통기한을 선택하세요.");
-        return;
-
-    }
-
-    ingredients.push({
-        name,
-        category,
-        qty,
-        expire
-    });
-
-    saveData();
-
-    document.getElementById("name").value="";
-    document.getElementById("qty").value=1;
-
-    render();
-
-}
-
-function deleteIngredient(index){
-
-    ingredients.splice(index,1);
-
-    saveData();
-
-    render();
-
+window.del=function(i){
+data.splice(i,1);
+localStorage.setItem("fridge",JSON.stringify(data));
+render();
 }
 
 function render(){
 
-    const list=document.getElementById("list");
+const list=document.getElementById("list");
+list.innerHTML="";
 
-    list.innerHTML="";
+let warns=[];
 
-    let warningItems=[];
+data.forEach((v,i)=>{
 
-    ingredients.forEach((item,index)=>{
+const d=new Date(v.exp);
+const t=new Date();
+const diff=Math.ceil((d-t)/(1000*60*60*24));
 
-        const today=new Date();
-        const expireDate=new Date(item.expire);
+if(diff<=3) warns.push(v.name);
 
-        const diff=Math.ceil(
-            (expireDate-today)/(1000*60*60*24)
-        );
+list.innerHTML+=`
+<li>
+<b>${v.name}</b> (${v.cat}) / ${v.qty}<br>
+유통기한: ${v.exp}
+${diff<=3?`<div class="warn">⚠ ${diff}일 남음</div>`:""}
+<br><button onclick="del(${i})" class="delete">삭제</button>
+</li>
+`;
 
-        let warning="";
+});
 
-        if(diff<=3){
-
-            warning=`<span class="warning">⚠️ ${diff}일 남음</span>`;
-
-            warningItems.push(item.name);
-
-        }
-
-        const li=document.createElement("li");
-
-        li.innerHTML=`
-            <b>${item.name}</b><br>
-            카테고리 : ${item.category}<br>
-            수량 : ${item.qty}<br>
-            유통기한 : ${item.expire}<br>
-            ${warning}
-            <br><br>
-            <button class="delete-btn"
-                onclick="deleteIngredient(${index})">
-                삭제
-            </button>
-        `;
-
-        list.appendChild(li);
-
-    });
-
-    const notification=
-        document.getElementById("notification");
-
-    if(warningItems.length){
-
-        notification.innerHTML=
-            "⚠️ 곧 만료 예정 : " +
-            warningItems.join(", ");
-
-    }else{
-
-        notification.innerHTML=
-            "만료 임박 식재료가 없습니다.";
-
-    }
+document.getElementById("alert").innerText =
+warns.length
+? "⚠ 임박: " + warns.join(", ")
+: "이상 없음";
 
 }
 
-function generatePrompt(){
+window.recipe = async function(){
 
-    if(ingredients.length===0){
+const items=data.map(v=>v.name).join(", ");
 
-        alert("식재료를 먼저 등록하세요.");
-        return;
+const prompt=`
+냉장고 재료: ${items}
 
-    }
-
-    const names=
-        ingredients.map(i=>i.name).join(", ");
-
-    const prompt=`
-냉장고 식재료:
-
-${names}
-
-위 재료를 활용해서
-
-1. 만들 수 있는 요리 3개
+이 재료로 만들 수 있는 요리를
+1. 요리명
 2. 조리시간
 3. 난이도
 4. 레시피
-5. 예상 칼로리
+5. 칼로리
 
-를 포함하여 추천해줘.
+형태로 알려줘.
 `;
 
-    document.getElementById("promptResult")
-        .textContent=prompt;
+document.getElementById("result").innerText="생성중...";
+
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+const model = genAI.getGenerativeModel({
+model:"gemini-2.5-flash"
+});
+
+const res = await model.generateContent(prompt);
+
+document.getElementById("result").innerText =
+res.response.text();
 
 }
 
