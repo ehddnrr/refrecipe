@@ -6,51 +6,97 @@
     <title>AI 냉장고 관리 및 레시피 추천</title>
     <style>
         :root {
-            --primary: #4CAF50;
-            --danger: #ff4d4d;
-            --warning: #ff9800;
-            --dark: #333;
-            --light: #f4f4f9;
+            --bg-main: #0f111a;
+            --bg-card: #161925;
+            --bg-input: #1f2335;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text-main: #f3f4f6;
+            --text-sub: #9ca3af;
+            --border: #2e344e;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: var(--light); color: var(--dark); }
-        header { background: var(--primary); color: white; padding: 1rem; text-align: center; font-size: 1.5rem; font-weight: bold; position: relative; }
-        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-        .card { background: white; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; border-bottom: 2px solid var(--light); padding-bottom: 0.5rem; font-size: 1.2rem; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; padding: 0; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+        }
+        header { 
+            background: var(--bg-card); 
+            color: white; 
+            padding: 1.2rem; 
+            text-align: center; 
+            font-size: 1.5rem; 
+            font-weight: bold; 
+            position: relative;
+            border-bottom: 1px solid var(--border);
+        }
+        .container { max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+        .card { 
+            background: var(--bg-card); 
+            padding: 2rem; 
+            margin-bottom: 1.5rem; 
+            border-radius: 12px; 
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+        }
+        h2 { margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; font-size: 1.3rem; color: #fff; }
         
         /* 폼 스타일 */
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.3rem; font-weight: bold; font-size: 0.9rem; }
-        input, select { width: 100%; padding: 0.5rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .form-group { margin-bottom: 1.25rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; color: var(--text-sub); }
+        input, select { 
+            width: 100%; padding: 0.75rem; box-sizing: border-box; 
+            border: 1px solid var(--border); border-radius: 8px; 
+            background: var(--bg-input); color: var(--text-main);
+            font-size: 0.95rem; outline: none; transition: border 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); }
         .qty-control { display: flex; gap: 0.5rem; align-items: center; }
         .qty-control input { text-align: center; }
         
         /* 버튼 스타일 */
-        button { background: var(--primary); color: white; border: none; padding: 0.6rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { opacity: 0.9; }
-        .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+        button { 
+            background: var(--primary); color: white; border: none; 
+            padding: 0.75rem 1.2rem; border-radius: 8px; cursor: pointer; 
+            font-weight: 600; font-size: 0.95rem; transition: background 0.2s;
+        }
+        button:hover { background: var(--primary-hover); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; }
         .btn-danger { background: var(--danger); }
-        .btn-secondary { background: #666; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #374151; color: var(--text-main); }
+        .btn-secondary:hover { background: #4b5563; }
         
         /* 인앱 알림 */
-        #notification-zone { display: none; background: #ffe6e6; border-left: 5px solid var(--danger); padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px; color: #b30000; font-weight: bold; }
+        #notification-zone { 
+            display: none; background: #2d1f24; border: 1px solid var(--danger);
+            padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; color: #fca5a5; font-weight: bold; 
+        }
         
         /* 식재료 리스트 */
         .ing-list { list-style: none; padding: 0; margin: 0; }
-        .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid #eee; }
-        .ing-item.imminent { background-color: #fff0f0; color: var(--danger); font-weight: bold; }
-        .ing-meta { font-size: 0.85rem; color: #666; }
-        .ing-item.imminent .ing-meta { color: var(--danger); }
-        .actions { display: flex; gap: 0.3rem; }
+        .ing-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 1rem; border-bottom: 1px solid var(--border); 
+        }
+        .ing-item.imminent { background-color: #2a1b22; border-radius: 8px; margin-bottom: 0.25rem; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .ing-item.imminent strong { color: #fca5a5; }
+        .ing-meta { font-size: 0.85rem; color: var(--text-sub); margin-top: 0.25rem; }
+        .ing-item.imminent .ing-meta { color: #f87171; }
+        .actions { display: flex; gap: 0.4rem; }
 
         /* 레시피 필터 및 결과 */
-        .filter-group { display: flex; gap: 1rem; margin-bottom: 1rem; }
-        .recipe-detail { display: none; background: #fff; border: 1px solid #ddd; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; }
-        .recipe-steps { margin-top: 1rem; padding-left: 1.2rem; }
-        .recipe-steps li { margin-bottom: 0.5rem; }
+        .filter-group { display: flex; gap: 1rem; margin-bottom: 1.25rem; }
+        .filter-group > div { flex: 1; }
+        .recipe-detail { display: none; background: var(--bg-input); border: 1px solid var(--border); padding: 1.5rem; border-radius: 10px; margin-top: 1.5rem; }
+        .recipe-steps { margin-top: 1rem; padding-left: 1.2rem; color: var(--text-main); }
+        .recipe-steps li { margin-bottom: 0.75rem; line-height: 1.5; }
         
-        /* 회원가입 모달 모방 */
-        #login-view { text-align: center; padding: 3rem 1rem; }
+        /* 로그인 뷰 */
+        #login-view { text-align: center; padding: 6rem 1rem; }
         #app-view { display: none; }
     </style>
 </head>
@@ -59,35 +105,38 @@
     <!-- 1. 회원 관리 및 로그인 -->
     <div id="login-view" class="container">
         <div class="card" style="max-width: 400px; margin: 0 auto;">
-            <h2>식재료 관리 로그인</h2>
+            <h2 style="text-align: center; border-none;">식재료 관리 로그인</h2>
+            <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 1.5rem;">체험용 계정 정보가 미리 입력되어 있습니다.</p>
             <div class="form-group">
+                <label>아이디</label>
                 <input type="text" id="login-id" placeholder="아이디 입력" value="demo_user">
             </div>
             <div class="form-group">
+                <label>비밀번호</label>
                 <input type="password" id="login-pw" placeholder="비밀번호 입력" value="1234">
             </div>
-            <button onclick="handleLogin()" style="width: 100%;">로그인</button>
+            <button onclick="handleLogin()" style="width: 100%; margin-top: 0.5rem;">로그인</button>
         </div>
     </div>
 
     <!-- 메인 앱 화면 -->
     <div id="app-view">
         <header>
-            스마트 AI 냉장고 관리
-            <button onclick="handleLogout()" class="btn-sm btn-secondary" style="position: absolute; right: 1rem; top: 1rem;">로그아웃</button>
+            Teammate AI 스타일 냉장고
+            <button onclick="handleLogout()" class="btn-sm btn-secondary" style="position: absolute; right: 1rem; top: 1.1rem;">로그아웃</button>
         </header>
 
         <div class="container">
             <!-- 4. 인앱 알림 팝업 -->
             <div id="notification-zone">
-                ⚠️ 유통기한이 3일 이하로 남은 식재료가 있습니다! 아래 목록을 확인하세요.
+                ⚠️ 유통기한이 3일 이하로 남은 식재료가 존재합니다! 하단 목록을 처리해 주세요.
             </div>
 
             <!-- 5. 메시지 알림 시뮬레이터 -->
-            <div class="card" style="background: #eef9ff; border-left: 5px solid #2196F3;">
-                <h2>🔔 시스템 알림 시뮬레이터 (매일 아침 9시 작동 기능)</h2>
-                <p style="font-size:0.9rem; margin-bottom:0.5rem;">서버 크론탭(Cron)이나 타이머를 통해 아침 9시에 카카오톡/문자가 발송되는 로직을 시뮬레이션합니다.</p>
-                <button onclick="simulatePushNotification()" class="btn-sm" style="background:#2196F3;">아침 9시 알림 즉시 발송 테스트</button>
+            <div class="card" style="background: #132238; border-color: #1e3a8a;">
+                <h2>🔔 알림 시뮬레이터 (매일 아침 9시 발송 로직)</h2>
+                <p style="font-size:0.85rem; color: #93c5fd; margin-bottom:0.75rem;">서버 크론탭을 통해 자동 실행되는 문자/카톡 정보 추출 메커니즘을 시뮬레이션합니다.</p>
+                <button onclick="simulatePushNotification()" class="btn-sm" style="background:#2563eb;">아침 9시 알림 즉시 테스트</button>
             </div>
 
             <!-- 2. 식재료 수동 등록 -->
@@ -112,9 +161,9 @@
                     <div class="form-group">
                         <label>수량</label>
                         <div class="qty-control">
-                            <button type="button" onclick="changeQty(-1)">-</button>
-                            <input type="number" id="ing-qty" value="1" min="1" style="width: 60px;">
-                            <button type="button" onclick="changeQty(1)">+</button>
+                            <button type="button" class="btn-secondary" onclick="changeQty(-1)" style="padding:0.5rem 1rem;">-</button>
+                            <input type="number" id="ing-qty" value="1" min="1" style="width: 70px;">
+                            <button type="button" class="btn-secondary" onclick="changeQty(1)" style="padding:0.5rem 1rem;">+</button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -125,8 +174,8 @@
                         <label>유통기한</label>
                         <input type="date" id="ing-exp-date" required>
                     </div>
-                    <button type="submit" id="submit-btn">등록 완료</button>
-                    <button type="button" id="cancel-btn" class="btn-secondary" onclick="resetForm()" style="display:none;">취소</button>
+                    <button type="submit" id="submit-btn" style="width: 100%;">등록 완료</button>
+                    <button type="button" id="cancel-btn" class="btn-secondary" onclick="resetForm()" style="display:none; width: 100%; margin-top: 0.5rem;">취소</button>
                 </form>
             </div>
 
@@ -157,46 +206,11 @@
                         </select>
                     </div>
                 </div>
-                <button onclick="generateAIRequest()" style="width: 100%; background: #9c27b0;">냉장고 기반 AI 레시피 요청하기</button>
+                <button onclick="generateAIRequest()" style="width: 100%; background: #7c3aed;">냉장고 기반 AI 레시피 요청하기</button>
 
-                <!-- AI 프롬프트 생성 시각화 내역 (PRD 검증용) -->
-                <div id="prompt-debug" style="margin-top:1rem; font-size:0.8rem; background:#eee; padding:0.5rem; display:none; border-radius:4px; white-space: pre-wrap;"></div>
+                <!-- AI 프롬프트 생성 시각화 내역 -->
+                <div id="prompt-debug" style="margin-top:1.25rem; font-size:0.8rem; background:#1e1e2e; color: #a6adc8; padding:0.75rem; display:none; border-radius:8px; white-space: pre-wrap; border: 1px solid var(--border);"></div>
 
                 <!-- 7. 레시피 상세 화면 보기 -->
                 <div id="recipe-result-view" class="recipe-detail">
-                    <h3 id="r-title" style="margin-top:0; color:#9c27b0;"></h3>
-                    <div style="background:#ddd; width:100%; height:150px; display:flex; align-items:center; justify-content:center; border-radius:4px; margin-bottom:1rem; font-weight:bold; color:#666;" id="r-img">
-                        🍳 완성 이미지 공간
-                    </div>
-                    <p><strong>⏱️ 조리 시간:</strong> <span id="r-time"></span> | <strong>🔥 칼로리:</strong> <span id="r-cal"></span></p>
-                    <p><strong>🛒 재료 구성:</strong> <span id="r-ingredients"></span></p>
-                    <h4>👨‍🍳 조리 순서</h4>
-                    <ol id="r-steps" class="recipe-steps"></ol>
-                </div>
-            </div>
 
-        </div>
-    </div>
-
-    <script>
-        // 초기 데이터 세팅 (2026년 기준 기본 날짜 지정)
-        let ingredients = JSON.parse(localStorage.getItem('ingredients')) || [
-            { name: '양파', category: '채소', qty: 3, buyDate: '2026-06-21', expDate: '2026-06-23' },
-            { name: '삼겹살', category: '육류', qty: 1, buyDate: '2026-06-21', expDate: '2026-06-22' }
-        ];
-
-        // 페이지 로드 시 오늘 날짜 기본 지정
-        document.getElementById('ing-buy-date').value = new Date().toISOString().substring(0, 10);
-        document.getElementById('ing-exp-date').value = new Date().toISOString().substring(0, 10);
-
-        // 1. 회원 관리 및 로그인 시스템 (변수 오타 수정 완료)
-        function handleLogin() {
-            const id = document.getElementById('login-id').value;
-            const pw = document.getElementById('login-pw').value;
-            if(id && pw) {
-                document.getElementById('login-view').style.display = 'none';
-                document.getElementById('app-view').style.display = 'block';
-                renderIngredients();
-            }
-        }
-        function handleLogout()
