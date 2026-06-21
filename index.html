@@ -179,25 +179,24 @@
     </div>
 
     <script>
-        // 초기 데이터 세팅
+        // 초기 데이터 세팅 (2026년 기준 기본 날짜 지정)
         let ingredients = JSON.parse(localStorage.getItem('ingredients')) || [
-            { name: '양파', category: '채소', qty: 3, buyDate: '2026-06-15', expDate: '2026-06-23' },
-            { name: '삼겹살', category: '육류', qty: 1, buyDate: '2026-06-18', expDate: '2026-06-20' }
+            { name: '양파', category: '채소', qty: 3, buyDate: '2026-06-21', expDate: '2026-06-23' },
+            { name: '삼겹살', category: '육류', qty: 1, buyDate: '2026-06-21', expDate: '2026-06-22' }
         ];
 
         // 페이지 로드 시 오늘 날짜 기본 지정
         document.getElementById('ing-buy-date').value = new Date().toISOString().substring(0, 10);
         document.getElementById('ing-exp-date').value = new Date().toISOString().substring(0, 10);
 
-        // 1. 회원 관리 및 로그인 시스템
+        // 1. 회원 관리 및 로그인 시스템 (변수 오타 수정 완료)
         function handleLogin() {
             const id = document.getElementById('login-id').value;
-            const hw = document.getElementById('login-pw').value;
-            if(id && hw) {
+            const pw = document.getElementById('login-pw').value;
+            if(id && pw) {
                 document.getElementById('login-view').style.display = 'none';
                 document.getElementById('app-view').style.display = 'block';
                 renderIngredients();
             }
         }
-        function handleLogout() {
-            document.getElementById('login-view').style.display = 'block';
+        function handleLogout()
